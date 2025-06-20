@@ -21,7 +21,8 @@ class TimeTrackerUI {
 
     // Login elements
     this.loginForm = document.getElementById('login-form');
-    this.apiTokenInput = document.getElementById('api-token');
+    this.emailInput = document.getElementById('email');
+    this.passwordInput = document.getElementById('password');
     this.loginBtn = document.getElementById('login-btn');
     this.loginError = document.getElementById('login-error');
 
@@ -90,9 +91,11 @@ class TimeTrackerUI {
   async handleLogin(e) {
     e.preventDefault();
     
-    const apiToken = this.apiTokenInput.value.trim();
-    if (!apiToken) {
-      this.showError('Please enter your API token');
+    const email = this.emailInput.value.trim();
+    const password = this.passwordInput.value.trim();
+    
+    if (!email || !password) {
+      this.showError('Please enter both email and password');
       return;
     }
 
@@ -100,7 +103,7 @@ class TimeTrackerUI {
     this.hideError();
 
     try {
-      const result = await ipcRenderer.invoke('authenticate', apiToken);
+      const result = await ipcRenderer.invoke('login', { email, password });
       
       if (result.success) {
         this.currentUser = result.user;
@@ -125,7 +128,8 @@ class TimeTrackerUI {
       this.selectedProject = null;
       this.stopTrackingUI();
       this.showLoginScreen();
-      this.apiTokenInput.value = '';
+      this.emailInput.value = '';
+      this.passwordInput.value = '';
     } catch (error) {
       console.error('Logout error:', error);
     }

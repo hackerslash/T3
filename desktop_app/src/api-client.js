@@ -33,12 +33,49 @@ class ApiClient {
     );
   }
 
+  async login(email, password) {
+    try {
+      // First, login with email/password to get JWT token
+      const loginResponse = await this.client.post('/api/auth/employee-login', {
+        email,
+        password
+      });
+
+      const jwtToken = loginResponse.data.token;
+      const user = loginResponse.data.user;
+
+      // Now generate an API token using the JWT token
+      const apiTokenResponse = await this.client.post('/api/auth/generate-api-token', {}, {
+        headers: {
+          'Authorization': `Bearer ${jwtToken}`
+        }
+      });
+
+      const apiToken = apiTokenResponse.data.api_token;
+      
+      // Set the API token for future requests
+      this.apiToken = apiToken;
+
+      return {
+        success: true,
+        user: user,
+        apiToken: apiToken
+      };
+    } catch (error) {
+      this.apiToken = null;
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message
+      };
+    }
+  }
+
   async authenticate(apiToken) {
     try {
       this.apiToken = apiToken;
       
       // Test the token by getting user profile
-      const response = await this.client.get('/api/auth/profile');
+      const response = await this.client.get('/api/auth/api-profile');
       
       return {
         success: true,

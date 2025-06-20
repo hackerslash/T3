@@ -12,13 +12,18 @@
         <div id="login-screen" class="screen">
             <div class="header">
                 <h1>Mercor Time Tracker</h1>
-                <p>Enter your API token to get started</p>
+                <p>Sign in to your account</p>
             </div>
             
             <form id="login-form">
                 <div class="form-group">
-                    <label for="api-token">API Token</label>
-                    <input type="password" id="api-token" placeholder="Enter your API token" required>
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" required>
                 </div>
                 
                 <button type="submit" id="login-btn" class="btn btn-primary">
@@ -30,8 +35,8 @@
             </form>
             
             <div class="help-text">
-                <p>Don't have an API token?</p>
-                <p>Check your email for the verification link or contact your administrator.</p>
+                <p>Need help with your account?</p>
+                <p>Contact your administrator for assistance.</p>
             </div>
         </div>
 
