@@ -66,6 +66,7 @@ router.post('/change-password', authenticateToken, validatePasswordChange, AuthC
 router.post('/generate-api-token', authenticateToken, AuthController.generateApiToken);
 
 // API token routes (for desktop app)
+router.get('/api-profile', authenticateApiToken, AuthController.getProfile);
 router.post('/logout', authenticateApiToken, AuthController.logout);
 
 module.exports = router;

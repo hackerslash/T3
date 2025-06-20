@@ -190,7 +190,23 @@ class MercorTimeTracker {
   }
 
   setupIpcHandlers() {
-    // Authentication
+    // Email/Password Login
+    ipcMain.handle('login', async (event, credentials) => {
+      try {
+        const result = await this.apiClient.login(credentials.email, credentials.password);
+        if (result.success) {
+          this.isAuthenticated = true;
+          this.currentUser = result.user;
+          await this.saveAuth(result.apiToken);
+          await this.loadProjects();
+        }
+        return result;
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
+
+    // Authentication (for API token - kept for backward compatibility)
     ipcMain.handle('authenticate', async (event, apiToken) => {
       try {
         const result = await this.apiClient.authenticate(apiToken);
@@ -341,11 +357,16 @@ class MercorTimeTracker {
             this.isAuthenticated = true;
             this.currentUser = result.user;
             await this.loadProjects();
+          } else {
+            // If saved token is invalid, clear it
+            this.clearAuth();
           }
         }
       }
     } catch (error) {
       console.error('Failed to load saved auth:', error);
+      // Clear invalid auth on error
+      this.clearAuth();
     }
   }
 
