@@ -13,8 +13,13 @@ const {
 // Public route for email verification
 router.post('/verify', EmployeeController.verifyEmployee);
 
+// Employee-specific routes (require authentication but not admin)
+router.get('/profile', authenticateToken, EmployeeController.getProfile);
+router.get('/stats', authenticateToken, EmployeeController.getStats);
+router.get('/time-logs', authenticateToken, EmployeeController.getTimeLogs);
+router.get('/download-app', authenticateToken, EmployeeController.downloadApp);
+
 // Protected routes - Admin only
-router.use(authenticateToken);
 router.use(requireRole(['admin']));
 
 // Employee CRUD operations

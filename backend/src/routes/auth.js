@@ -54,6 +54,7 @@ const validateProfileUpdate = [
 
 // Public routes
 router.post('/login', validateLogin, AuthController.login);
+router.post('/employee-login', validateLogin, AuthController.employeeLogin);
 router.post('/password-reset', validatePasswordReset, AuthController.requestPasswordReset);
 router.post('/password-reset/confirm', validatePasswordResetConfirm, AuthController.resetPassword);
 

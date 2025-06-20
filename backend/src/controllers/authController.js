@@ -59,6 +59,61 @@ class AuthController {
     }
   }
 
+  // Employee login (same as login but specifically for employees)
+  async employeeLogin(req, res) {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+      }
+
+      // Get user from database
+      const user = await database.get(`
+        SELECT id, uuid, email, password_hash, first_name, last_name, is_active, is_verified, role
+        FROM users 
+        WHERE email = ? AND role = 'employee'
+      `, [email]);
+
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid email or password' });
+      }
+
+      // Check if user is active
+      if (!user.is_active) {
+        return res.status(401).json({ error: 'Account is not active' });
+      }
+
+      // Verify password
+      const isValidPassword = await AuthUtils.comparePassword(password, user.password_hash);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: 'Invalid email or password' });
+      }
+
+      // Generate JWT token
+      const token = AuthUtils.generateJWT({
+        userId: user.id,
+        email: user.email,
+        role: user.role
+      });
+
+      res.json({
+        token,
+        user: {
+          id: user.uuid,
+          email: user.email,
+          name: `${user.first_name} ${user.last_name}`.trim(),
+          role: user.role,
+          is_verified: user.is_verified
+        }
+      });
+
+    } catch (error) {
+      console.error('Error during employee login:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
   // Generate API token for desktop app
   async generateApiToken(req, res) {
     try {

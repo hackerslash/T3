@@ -298,6 +298,142 @@ class EmployeeController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
+
+  // Employee-specific methods
+
+  // Get employee profile (for logged-in employee)
+  async getProfile(req, res) {
+    try {
+      const userId = req.user.userId;
+
+      const user = await database.get(`
+        SELECT uuid as id, email, first_name, last_name, is_active, is_verified, created_at
+        FROM users 
+        WHERE id = ? AND role = 'employee'
+      `, [userId]);
+
+      if (!user) {
+        return res.status(404).json({ error: 'Employee not found' });
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        name: `${user.first_name} ${user.last_name}`.trim(),
+        is_active: user.is_active,
+        created_at: user.created_at
+      });
+
+    } catch (error) {
+      console.error('Error getting employee profile:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // Get employee stats
+  async getStats(req, res) {
+    try {
+      const userId = req.user.userId;
+      const today = new Date().toISOString().split('T')[0];
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      const monthStart = new Date();
+      monthStart.setDate(1);
+
+      // Get time stats
+      const todayStats = await database.get(`
+        SELECT COALESCE(SUM(duration), 0) as total_seconds
+        FROM time_logs 
+        WHERE user_id = ? AND DATE(start_time) = ?
+      `, [userId, today]);
+
+      const weekStats = await database.get(`
+        SELECT COALESCE(SUM(duration), 0) as total_seconds
+        FROM time_logs 
+        WHERE user_id = ? AND start_time >= ?
+      `, [userId, weekStart.toISOString()]);
+
+      const monthStats = await database.get(`
+        SELECT COALESCE(SUM(duration), 0) as total_seconds
+        FROM time_logs 
+        WHERE user_id = ? AND start_time >= ?
+      `, [userId, monthStart.toISOString()]);
+
+      // Get active sessions
+      const activeSessions = await database.get(`
+        SELECT COUNT(*) as count
+        FROM time_logs 
+        WHERE user_id = ? AND end_time IS NULL
+      `, [userId]);
+
+      // Get projects count
+      const projectsCount = await database.get(`
+        SELECT COUNT(DISTINCT project_id) as count
+        FROM project_assignments 
+        WHERE user_id = ?
+      `, [userId]);
+
+      res.json({
+        total_hours_today: Math.round(todayStats.total_seconds / 3600 * 100) / 100,
+        total_hours_week: Math.round(weekStats.total_seconds / 3600 * 100) / 100,
+        total_hours_month: Math.round(monthStats.total_seconds / 3600 * 100) / 100,
+        active_sessions: activeSessions.count,
+        projects_count: projectsCount.count
+      });
+
+    } catch (error) {
+      console.error('Error getting employee stats:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // Get employee time logs
+  async getTimeLogs(req, res) {
+    try {
+      const userId = req.user.userId;
+      const limit = parseInt(req.query.limit) || 50;
+      const offset = parseInt(req.query.offset) || 0;
+
+      const timeLogs = await database.all(`
+        SELECT 
+          tl.id,
+          tl.project_id,
+          tl.start_time,
+          tl.end_time,
+          tl.duration,
+          p.name as project_name
+        FROM time_logs tl
+        LEFT JOIN projects p ON tl.project_id = p.id
+        WHERE tl.user_id = ?
+        ORDER BY tl.start_time DESC
+        LIMIT ? OFFSET ?
+      `, [userId, limit, offset]);
+
+      res.json(timeLogs);
+
+    } catch (error) {
+      console.error('Error getting employee time logs:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // Download desktop app
+  async downloadApp(req, res) {
+    try {
+      // For now, return a placeholder response
+      // In a real implementation, this would serve the actual app binary
+      res.json({
+        message: 'Desktop app download will be available soon',
+        download_url: '/api/employees/download-app/binary',
+        version: '1.0.0',
+        platforms: ['windows', 'macos', 'linux']
+      });
+
+    } catch (error) {
+      console.error('Error downloading app:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
 }
 
 module.exports = new EmployeeController();
